@@ -27,17 +27,21 @@ module Apartment
     #   See the middleware/console declarations below to help with this. Hope to fix that soon.
     #
     config.to_prepare do
-      next if ARGV.any? { |arg| arg =~ /\Aassets:(?:precompile|clean)\z/ }
+      Apartment::Tenant.reinitialize
+    end
 
-      begin
-        Apartment.connection_class.connection_pool.with_connection do
-          Apartment::Tenant.init
+    #
+    # Ensure that Apartment::Tenant.init is called when
+    # a new connection is requested.
+    #
+    module ApartmentInitializer
+      def connection
+        super.tap do
+          Apartment::Tenant.init_once
         end
-      rescue ::ActiveRecord::NoDatabaseError
-        # Since `db:create` and other tasks invoke this block from Rails 5.2.0,
-        # we need to swallow the error to execute `db:create` properly.
       end
     end
+    ActiveRecord::Base.singleton_class.prepend ApartmentInitializer
 
     #
     #   Ensure rake tasks are loaded

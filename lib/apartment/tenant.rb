@@ -8,14 +8,22 @@ module Apartment
     extend self
     extend Forwardable
 
-    def_delegators :adapter, :create, :drop, :switch, :switch!, :current, :each, :reset, :set_callback, :seed, :current_tenant, :default_tenant, :environmentify
+    def_delegators :adapter, :create, :drop, :switch, :switch!, :current, :each, :reset, :init, :set_callback, :seed, :current_tenant, :default_tenant, :environmentify
 
     attr_writer :config
 
-    #   Initialize Apartment config options such as excluded_models
-    #
-    def init
-      adapter.process_excluded_models
+    def init_once
+      return if @already_initialized
+
+      # To avoid infinite loops in work init is doing,
+      # we need to set @already_initialized to true
+      # before init is called
+      @already_initialized = true
+      init
+    end
+
+    def reinitialize
+      @already_initialized = false
     end
 
     #   Fetch the proper multi-tenant adapter based on Rails config
@@ -52,6 +60,7 @@ module Apartment
     #
     def reload!(config = nil)
       Thread.current[:apartment_adapter] = nil
+      reinitialize
       @config = config
     end
 

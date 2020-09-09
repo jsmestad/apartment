@@ -38,6 +38,12 @@ module Apartment
         Apartment.connection.current_database
       end
 
+      #   Initialize Apartment config options such as excluded_models
+      #
+      def init
+        process_excluded_models
+      end
+
       #   Return the original public tenant
       #
       #   @return {String} default tenant name
